@@ -4,6 +4,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 pacman_package_file="$repo_root/packages/pacman.txt"
 aur_package_file="$repo_root/packages/aur.txt"
+state_seed_root="$repo_root/state"
 
 config_dirs=(
   hypr
@@ -24,6 +25,10 @@ config_files=(
 
 picture_files=(
   "Wallpapers/1358147.png"
+)
+
+state_seed_files=(
+  "caelestia/scheme.json"
 )
 
 dry_run=0
@@ -113,6 +118,18 @@ run_in_dir() {
     cd "$dir"
     "$@"
   )
+}
+
+write_text_file() {
+  local dst="$1"
+  local content="$2"
+
+  if (( dry_run )); then
+    printf '+ write %q <= %q\n' "$dst" "$content"
+    return 0
+  fi
+
+  printf '%s\n' "$content" > "$dst"
 }
 
 sudo_run() {
@@ -228,6 +245,49 @@ backup_and_link() {
   printf 'link  %s -> %s\n' "$dst" "$src"
 }
 
+seed_file_if_missing() {
+  local src="$1"
+  local dst="$2"
+
+  if [[ -e "$dst" || -L "$dst" ]]; then
+    printf 'skip  %s\n' "$dst"
+    return 0
+  fi
+
+  run mkdir -p "$(dirname "$dst")"
+  run cp "$src" "$dst"
+  printf 'seed  %s <- %s\n' "$dst" "$src"
+}
+
+seed_wallpaper_state() {
+  local dst="$HOME/.local/state/caelestia/wallpaper/path.txt"
+  local wallpaper_path="$HOME/Pictures/${picture_files[0]}"
+  local existing=""
+
+  if [[ -f "$dst" ]]; then
+    existing="$(<"$dst")"
+  fi
+
+  if [[ -n "$existing" && -e "$existing" ]]; then
+    printf 'skip  %s\n' "$dst"
+    return 0
+  fi
+
+  run mkdir -p "$(dirname "$dst")"
+  write_text_file "$dst" "$wallpaper_path"
+  printf 'seed  %s <- %s\n' "$dst" "$wallpaper_path"
+}
+
+seed_runtime_state() {
+  local item
+
+  for item in "${state_seed_files[@]}"; do
+    seed_file_if_missing "$state_seed_root/$item" "$HOME/.local/state/$item"
+  done
+
+  seed_wallpaper_state
+}
+
 link_dotfiles() {
   local item
 
@@ -250,6 +310,7 @@ fi
 
 if (( ! deps_only )); then
   link_dotfiles
+  seed_runtime_state
 fi
 
 if (( dry_run )); then

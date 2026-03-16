@@ -29,13 +29,14 @@ On Arch-based systems the installer now:
 - bootstraps `yay` if needed
 - installs AUR packages from `packages/aur.txt`
 - links the dotfiles into `~/.config` and `~/Pictures`
+- seeds the initial Caelestia wallpaper and scheme state in `~/.local/state/caelestia`
 
 Useful flags:
 - `--skip-deps` only links dotfiles
 - `--deps-only` only installs packages
 
 The installer covers shell/runtime dependencies and the apps configured in this repo.
-Personal app choices such as `brave`, `codium`, and `nemo` are still left to you.
+Personal app choices such as `brave` and `codium` are still left to you.
 
 What this repo manages:
 - `~/.config/hypr`
@@ -54,7 +55,7 @@ What this repo manages:
 What was intentionally left out:
 - `fish_variables`
 - `fcitx5/conf/cached_layouts`
-- app data, caches, and runtime state
+- app data, caches, notification history, launcher DB, and other mutable runtime state
 - unused configs such as Waybar
 
 Notes:

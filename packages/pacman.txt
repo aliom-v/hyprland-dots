@@ -3,6 +3,7 @@ base-devel
 git
 
 # Core desktop integration used directly by this repo.
+adwaita-cursors
 fcitx5
 fcitx5-chinese-addons
 fcitx5-configtool
@@ -23,6 +24,8 @@ noto-fonts-emoji
 noto-fonts-extra
 
 # Small user-facing tools referenced by keybinds or the shell.
+mpv
+nemo
 pavucontrol
 qps
 thunar
