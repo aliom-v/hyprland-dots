@@ -1,0 +1,71 @@
+palette = "shorin_tags"
+
+add_newline = false
+command_timeout = 500
+
+format = """
+[](primary)\
+$username\
+[](bg:secondary fg:primary)\
+$directory\
+$git_branch\
+$git_status\
+[](surface2)\
+$time\
+[](fg:surface2)\
+\n$character"""
+
+[username]
+show_always = true
+style_user = "bg:primary fg:bg bold"
+style_root = "bg:error fg:bg bold"
+format = "[ $user ]($style)"
+
+[directory]
+style = "bg:secondary fg:bg bold"
+format = "[ $path ]($style)"
+truncation_length = 3
+truncation_symbol = "…/"
+home_symbol = "~"
+
+[git_branch]
+symbol = ""
+style = "bg:tertiary fg:bg bold"
+format = "[](fg:secondary bg:tertiary)[ $symbol $branch ]($style)"
+truncation_length = 24
+truncation_symbol = "…"
+
+[git_status]
+style = "bg:tertiary fg:bg bold"
+format = "[( $all_status$ahead_behind)]($style)[](fg:tertiary) "
+ahead = "⇡${count} "
+behind = "⇣${count} "
+diverged = "⇕⇡${ahead_count}⇣${behind_count} "
+untracked = "? "
+modified = "! "
+staged = "+ "
+renamed = "» "
+deleted = "✘ "
+stashed = "$ "
+conflicted = "= "
+up_to_date = "✓ "
+
+[time]
+disabled = false
+time_format = "%R"
+style = "bg:surface2 fg:text bold"
+format = "[  $time ]($style)"
+
+[character]
+success_symbol = "[](bold primary)"
+error_symbol = "[](bold error)"
+vimcmd_symbol = "[](bold tertiary)"
+
+[palettes.shorin_tags]
+bg = "#141218"
+text = "#e6e1e9"
+primary = "#cbbeff"
+secondary = "#eeb8cb"
+tertiary = "#bae0ff"
+surface2 = "#2b2930"
+error = "#ffb4ab"

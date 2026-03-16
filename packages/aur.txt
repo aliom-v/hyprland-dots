@@ -1,0 +1,3 @@
+# Caelestia pulls in quickshell, app2unit, the shell runtime, and its
+# package-level dependencies.
+caelestia-meta

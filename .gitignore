@@ -1,0 +1,16 @@
+*~
+*.log
+*.swp
+*.swo
+*.bak
+*.orig
+.DS_Store
+
+# Local machine-specific overrides
+config/caelestia/hypr-user.local.conf
+config/caelestia/hypr-execs.local.conf
+config/caelestia/user-config.fish
+
+# Editor and tool state
+config/**/.qmlls.ini
+config/**/.cache/

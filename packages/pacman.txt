@@ -1,0 +1,28 @@
+# Tooling required to bootstrap yay when it is missing.
+base-devel
+git
+
+# Core desktop integration used directly by this repo.
+fcitx5
+fcitx5-chinese-addons
+fcitx5-configtool
+fcitx5-gtk
+fcitx5-qt
+gnome-keyring
+polkit-gnome
+kitty
+kitty-shell-integration
+kitty-terminfo
+uwsm
+ydotool
+
+# Font coverage for CJK, emoji, and fallback glyphs.
+noto-fonts
+noto-fonts-cjk
+noto-fonts-emoji
+noto-fonts-extra
+
+# Small user-facing tools referenced by keybinds or the shell.
+pavucontrol
+qps
+thunar

@@ -1,0 +1,39 @@
+{
+  "appearance": {
+    "font": {
+      "family": {
+        "sans": "Rubik",
+        "mono": "CaskaydiaCove NF",
+        "material": "Material Symbols Rounded",
+        "clock": "Rubik"
+      }
+    }
+  },
+  "launcher": {
+    "enabled": true,
+    "showOnHover": false
+  },
+  "general": {
+    "idle": {
+      "timeouts": [
+        {
+          "timeout": 18000,
+          "idleAction": "lock"
+        },
+        {
+          "timeout": 18000,
+          "idleAction": "dpms off",
+          "returnAction": "dpms on"
+        },
+        {
+          "enabled": false,
+          "timeout": 18000,
+          "idleAction": [
+            "systemctl",
+            "suspend-then-hibernate"
+          ]
+        }
+      ]
+    }
+  }
+}
