@@ -46,6 +46,11 @@ Singleton {
     readonly property alias cava: cava
     readonly property alias beatTracker: beatTracker
 
+    function normaliseIncrement(amount: real): real {
+        const configured = amount === undefined || isNaN(amount) ? Config.services.audioIncrement : amount;
+        return Math.max(Config.services.minimumAdjustmentStep, configured);
+    }
+
     function setVolume(newVolume: real): void {
         if (sink?.ready && sink?.audio) {
             sink.audio.muted = false;
@@ -54,11 +59,11 @@ Singleton {
     }
 
     function incrementVolume(amount: real): void {
-        setVolume(volume + (amount || Config.services.audioIncrement));
+        setVolume(volume + normaliseIncrement(amount));
     }
 
     function decrementVolume(amount: real): void {
-        setVolume(volume - (amount || Config.services.audioIncrement));
+        setVolume(volume - normaliseIncrement(amount));
     }
 
     function setSourceVolume(newVolume: real): void {
@@ -69,11 +74,11 @@ Singleton {
     }
 
     function incrementSourceVolume(amount: real): void {
-        setSourceVolume(sourceVolume + (amount || Config.services.audioIncrement));
+        setSourceVolume(sourceVolume + normaliseIncrement(amount));
     }
 
     function decrementSourceVolume(amount: real): void {
-        setSourceVolume(sourceVolume - (amount || Config.services.audioIncrement));
+        setSourceVolume(sourceVolume - normaliseIncrement(amount));
     }
 
     function setAudioSink(newSink: PwNode): void {

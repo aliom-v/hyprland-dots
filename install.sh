@@ -12,8 +12,10 @@ config_dirs=(
   quickshell
   kitty
   foot
+  fuzzel
   fish
   fastfetch
+  menus
   fcitx5
   uwsm
   btop
@@ -259,6 +261,20 @@ seed_file_if_missing() {
   printf 'seed  %s <- %s\n' "$dst" "$src"
 }
 
+seed_text_file_if_missing() {
+  local dst="$1"
+  local content="$2"
+
+  if [[ -e "$dst" || -L "$dst" ]]; then
+    printf 'skip  %s\n' "$dst"
+    return 0
+  fi
+
+  run mkdir -p "$(dirname "$dst")"
+  write_text_file "$dst" "$content"
+  printf 'seed  %s\n' "$dst"
+}
+
 seed_wallpaper_state() {
   local dst="$HOME/.local/state/caelestia/wallpaper/path.txt"
   local wallpaper_path="$HOME/Pictures/${picture_files[0]}"
@@ -285,6 +301,9 @@ seed_runtime_state() {
     seed_file_if_missing "$state_seed_root/$item" "$HOME/.local/state/$item"
   done
 
+  seed_text_file_if_missing "$HOME/.config/caelestia/hypr-user.local.conf" "# Machine-specific monitor overrides for this host."
+  seed_text_file_if_missing "$HOME/.config/caelestia/hypr-execs.local.conf" "# Machine-specific startup programs for this host."
+  seed_text_file_if_missing "$HOME/.config/caelestia/user-config.fish" "# Machine-specific shell config for this host."
   seed_wallpaper_state
 }
 

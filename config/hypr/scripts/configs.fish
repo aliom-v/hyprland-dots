@@ -19,7 +19,7 @@ if ! test -f $argv/hypr-user.conf
     set _reload true
 end
 
-# Ensure local machine-specific overrides exist
+# Ensure ignored machine-specific overrides exist
 if ! test -f $argv/hypr-user.local.conf
     touch -a $argv/hypr-user.local.conf
     set _reload true

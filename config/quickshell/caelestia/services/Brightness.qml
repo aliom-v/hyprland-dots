@@ -41,16 +41,21 @@ Singleton {
         return monitors.find(m => m.modelData.name === query);
     }
 
+    function normaliseIncrement(amount: real): real {
+        const configured = amount === undefined || isNaN(amount) ? Config.services.brightnessIncrement : amount;
+        return Math.max(Config.services.minimumAdjustmentStep, configured);
+    }
+
     function increaseBrightness(): void {
         const monitor = getMonitor("active");
         if (monitor)
-            monitor.setBrightness(monitor.brightness + Config.services.brightnessIncrement);
+            monitor.setBrightness(monitor.brightness + normaliseIncrement());
     }
 
     function decreaseBrightness(): void {
         const monitor = getMonitor("active");
         if (monitor)
-            monitor.setBrightness(monitor.brightness - Config.services.brightnessIncrement);
+            monitor.setBrightness(monitor.brightness - normaliseIncrement());
     }
 
     onMonitorsChanged: {

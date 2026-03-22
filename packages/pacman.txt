@@ -4,16 +4,21 @@ git
 
 # Core desktop integration used directly by this repo.
 adwaita-cursors
+hyprland
 fcitx5
 fcitx5-chinese-addons
 fcitx5-configtool
 fcitx5-gtk
 fcitx5-qt
+fish
+foot
+fuzzel
 gnome-keyring
 polkit-gnome
 kitty
 kitty-shell-integration
 kitty-terminfo
+starship
 uwsm
 ydotool
 
@@ -24,8 +29,17 @@ noto-fonts-emoji
 noto-fonts-extra
 
 # Small user-facing tools referenced by keybinds or the shell.
+btop
+cliphist
+fastfetch
+gammastep
+hyprpicker
+jq
+libqalculate
 mpv
 nemo
-pavucontrol
+pavucontrol-qt
 qps
 thunar
+trash-cli
+wl-clipboard

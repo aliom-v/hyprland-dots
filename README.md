@@ -6,6 +6,7 @@ Included:
 - Hyprland
 - Caelestia + Quickshell
 - Kitty and Foot
+- Fuzzel + XDG menus
 - Fish + Starship
 - Fastfetch
 - Fcitx5
@@ -44,8 +45,10 @@ What this repo manages:
 - `~/.config/quickshell`
 - `~/.config/kitty`
 - `~/.config/foot`
+- `~/.config/fuzzel`
 - `~/.config/fish`
 - `~/.config/fastfetch`
+- `~/.config/menus`
 - `~/.config/fcitx5`
 - `~/.config/uwsm`
 - `~/.config/btop`
