@@ -5,6 +5,9 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 pacman_package_file="$repo_root/packages/pacman.txt"
 aur_package_file="$repo_root/packages/aur.txt"
 state_seed_root="$repo_root/state"
+install_state_dir="${HOME}/.local/state/hyprland-dots"
+install_state_file="$install_state_dir/last-install.sh"
+backup_parent="${HOME}/.dots-backups"
 
 config_dirs=(
   hypr
@@ -36,6 +39,9 @@ state_seed_files=(
 dry_run=0
 skip_deps=0
 deps_only=0
+uninstall=0
+linked_targets=()
+created_seed_paths=()
 
 usage() {
   cat <<'EOF'
@@ -45,6 +51,7 @@ Options:
   --dry-run    Print the actions without changing the system.
   --skip-deps  Skip package installation and only link dotfiles.
   --deps-only  Install packages only and skip linking dotfiles.
+  --uninstall  Restore the previous dotfiles state from the latest install.
   -h, --help   Show this help message.
 EOF
 }
@@ -59,6 +66,9 @@ while (( $# > 0 )); do
       ;;
     --deps-only)
       deps_only=1
+      ;;
+    --uninstall)
+      uninstall=1
       ;;
     -h|--help)
       usage
@@ -78,12 +88,17 @@ if (( skip_deps && deps_only )); then
   exit 1
 fi
 
+if (( uninstall && (skip_deps || deps_only) )); then
+  printf '%s\n' '--uninstall cannot be combined with --skip-deps or --deps-only' >&2
+  exit 1
+fi
+
 if (( EUID == 0 )); then
   printf 'run this script as your regular user, not root\n' >&2
   exit 1
 fi
 
-backup_root="${HOME}/.dots-backups/$(date +%Y%m%d-%H%M%S)"
+backup_root="$backup_parent/$(date +%Y%m%d-%H%M%S)"
 created_backup_dir=0
 
 print_cmd() {
@@ -219,11 +234,255 @@ ensure_backup_dir() {
   fi
 }
 
+build_managed_targets() {
+  local -n out_ref="$1"
+  local item
+
+  out_ref=()
+
+  for item in "${config_dirs[@]}"; do
+    out_ref+=( "$HOME/.config/$item" )
+  done
+
+  for item in "${config_files[@]}"; do
+    out_ref+=( "$HOME/.config/$item" )
+  done
+
+  for item in "${picture_files[@]}"; do
+    out_ref+=( "$HOME/Pictures/$item" )
+  done
+}
+
+build_seed_targets() {
+  local -n out_ref="$1"
+  local item
+
+  out_ref=()
+
+  for item in "${state_seed_files[@]}"; do
+    out_ref+=( "$HOME/.local/state/$item" )
+  done
+
+  out_ref+=(
+    "$HOME/.config/caelestia/hypr-user.local.conf"
+    "$HOME/.config/caelestia/hypr-execs.local.conf"
+    "$HOME/.config/caelestia/user-config.fish"
+    "$HOME/.local/state/caelestia/wallpaper/path.txt"
+  )
+}
+
+write_install_state() {
+  local item
+
+  if (( dry_run )); then
+    printf '+ write install state %q\n' "$install_state_file"
+    return 0
+  fi
+
+  mkdir -p "$install_state_dir"
+
+  {
+    printf 'state_repo_root=%q\n' "$repo_root"
+    printf 'state_backup_root=%q\n' "$backup_root"
+    printf 'state_linked_targets=(\n'
+    for item in "${linked_targets[@]}"; do
+      printf '  %q\n' "$item"
+    done
+    printf ')\n'
+    printf 'state_created_seed_paths=(\n'
+    for item in "${created_seed_paths[@]}"; do
+      printf '  %q\n' "$item"
+    done
+    printf ')\n'
+  } > "$install_state_file"
+
+  printf 'state %s\n' "$install_state_file"
+}
+
+load_install_state() {
+  if [[ ! -f "$install_state_file" ]]; then
+    return 1
+  fi
+
+  # shellcheck disable=SC1090
+  source "$install_state_file"
+}
+
+find_latest_backup_root() {
+  local latest=""
+
+  if [[ -d "$backup_parent" ]]; then
+    latest="$(find "$backup_parent" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort | tail -n 1)"
+  fi
+
+  if [[ -n "$latest" ]]; then
+    printf '%s/%s\n' "$backup_parent" "$latest"
+  fi
+}
+
+path_is_managed_link() {
+  local path="$1"
+  local managed_root="$2"
+  local resolved=""
+
+  if [[ ! -L "$path" ]]; then
+    return 1
+  fi
+
+  resolved="$(readlink -f "$path" || true)"
+  [[ "$resolved" == "$managed_root" || "$resolved" == "$managed_root/"* ]]
+}
+
+remove_path() {
+  local path="$1"
+
+  if [[ ! -e "$path" && ! -L "$path" ]]; then
+    printf 'skip  %s\n' "$path"
+    return 0
+  fi
+
+  run rm -rf "$path"
+  printf 'remove %s\n' "$path"
+}
+
+restore_managed_target() {
+  local dst="$1"
+  local managed_root="$2"
+  local restore_root="$3"
+  local backup_path=""
+
+  if [[ -n "$restore_root" ]]; then
+    backup_path="$restore_root/${dst#"$HOME"/}"
+  fi
+
+  if [[ -n "$backup_path" && ( -e "$backup_path" || -L "$backup_path" ) ]]; then
+    if [[ -e "$dst" || -L "$dst" ]]; then
+      run rm -rf "$dst"
+    fi
+    run mkdir -p "$(dirname "$dst")"
+    run mv "$backup_path" "$dst"
+    printf 'restore %s <- %s\n' "$dst" "$backup_path"
+    return 0
+  fi
+
+  if path_is_managed_link "$dst" "$managed_root"; then
+    remove_path "$dst"
+    return 0
+  fi
+
+  if [[ ! -e "$dst" && ! -L "$dst" ]]; then
+    printf 'skip  %s\n' "$dst"
+    return 0
+  fi
+
+  printf 'keep  %s\n' "$dst"
+}
+
+seed_text_matches_default() {
+  local path="$1"
+  local expected=""
+  local content=""
+
+  case "$path" in
+    "$HOME/.config/caelestia/hypr-user.local.conf")
+      expected="# Machine-specific monitor overrides for this host."
+      ;;
+    "$HOME/.config/caelestia/hypr-execs.local.conf")
+      expected="# Machine-specific startup programs for this host."
+      ;;
+    "$HOME/.config/caelestia/user-config.fish")
+      expected="# Machine-specific shell config for this host."
+      ;;
+    "$HOME/.local/state/caelestia/wallpaper/path.txt")
+      expected="$HOME/Pictures/${picture_files[0]}"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+
+  if [[ ! -f "$path" ]]; then
+    return 1
+  fi
+
+  content="$(<"$path")"
+  [[ "$content" == "$expected" ]]
+}
+
+seed_file_matches_default() {
+  local path="$1"
+
+  case "$path" in
+    "$HOME/.local/state/caelestia/scheme.json")
+      [[ -f "$path" ]] && cmp -s "$state_seed_root/caelestia/scheme.json" "$path"
+      ;;
+    *)
+      seed_text_matches_default "$path"
+      ;;
+  esac
+}
+
+uninstall_dotfiles() {
+  local managed_root="$repo_root"
+  local restore_root=""
+  local state_loaded=0
+  local item
+  local targets=()
+  local seed_targets=()
+
+  if load_install_state; then
+    state_loaded=1
+    managed_root="${state_repo_root:-$repo_root}"
+    restore_root="${state_backup_root:-}"
+    targets=( "${state_linked_targets[@]}" )
+    seed_targets=( "${state_created_seed_paths[@]}" )
+  else
+    restore_root="$(find_latest_backup_root)"
+    build_managed_targets targets
+    build_seed_targets seed_targets
+  fi
+
+  if (( ${#targets[@]} == 0 )); then
+    build_managed_targets targets
+  fi
+
+  for item in "${targets[@]}"; do
+    restore_managed_target "$item" "$managed_root" "$restore_root"
+  done
+
+  if (( state_loaded )); then
+    for item in "${seed_targets[@]}"; do
+      remove_path "$item"
+    done
+  else
+    for item in "${seed_targets[@]}"; do
+      if [[ ! -e "$item" && ! -L "$item" ]]; then
+        printf 'skip  %s\n' "$item"
+        continue
+      fi
+
+      if seed_file_matches_default "$item"; then
+        remove_path "$item"
+      else
+        printf 'keep  %s\n' "$item"
+      fi
+    done
+  fi
+
+  if (( dry_run )); then
+    printf '+ rm -f %q\n' "$install_state_file"
+    return 0
+  fi
+
+  rm -f "$install_state_file"
+}
+
 backup_and_link() {
   local src="$1"
   local dst="$2"
   local resolved_src resolved_dst backup_path
 
+  linked_targets+=( "$dst" )
   resolved_src="$(readlink -f "$src")"
 
   if [[ -L "$dst" ]]; then
@@ -258,6 +517,7 @@ seed_file_if_missing() {
 
   run mkdir -p "$(dirname "$dst")"
   run cp "$src" "$dst"
+  created_seed_paths+=( "$dst" )
   printf 'seed  %s <- %s\n' "$dst" "$src"
 }
 
@@ -272,6 +532,7 @@ seed_text_file_if_missing() {
 
   run mkdir -p "$(dirname "$dst")"
   write_text_file "$dst" "$content"
+  created_seed_paths+=( "$dst" )
   printf 'seed  %s\n' "$dst"
 }
 
@@ -291,6 +552,7 @@ seed_wallpaper_state() {
 
   run mkdir -p "$(dirname "$dst")"
   write_text_file "$dst" "$wallpaper_path"
+  created_seed_paths+=( "$dst" )
   printf 'seed  %s <- %s\n' "$dst" "$wallpaper_path"
 }
 
@@ -323,6 +585,16 @@ link_dotfiles() {
   done
 }
 
+if (( uninstall )); then
+  uninstall_dotfiles
+  if (( dry_run )); then
+    printf 'dry run complete\n'
+  else
+    printf 'uninstall complete\n'
+  fi
+  exit 0
+fi
+
 if (( ! skip_deps )); then
   install_dependencies
 fi
@@ -330,6 +602,7 @@ fi
 if (( ! deps_only )); then
   link_dotfiles
   seed_runtime_state
+  write_install_state
 fi
 
 if (( dry_run )); then
