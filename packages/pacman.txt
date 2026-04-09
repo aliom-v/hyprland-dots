@@ -5,11 +5,8 @@ git
 # Core desktop integration used directly by this repo.
 adwaita-cursors
 hyprland
-fcitx5
-fcitx5-chinese-addons
-fcitx5-configtool
-fcitx5-gtk
-fcitx5-qt
+ibus
+ibus-rime
 fish
 foot
 fuzzel

@@ -11,6 +11,7 @@ MouseArea {
     id: root
 
     required property SystemTrayItem modelData
+    readonly property string trayIconSource: Icons.getTrayIcon(root.modelData.id, root.modelData.icon)
 
     acceptedButtons: Qt.LeftButton | Qt.RightButton
     preventStealing: true
@@ -28,7 +29,7 @@ MouseArea {
         id: icon
 
         anchors.fill: parent
-        source: Icons.getTrayIcon(root.modelData.id, root.modelData.icon)
+        source: root.trayIconSource
         colour: Colours.palette.m3secondary
         layer.enabled: Config.bar.tray.recolour
     }

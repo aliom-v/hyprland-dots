@@ -12,7 +12,7 @@
 - Fuzzel + XDG menus
 - Fish + Starship
 - Fastfetch
-- Fcitx5
+- IBus + Rime
 - UWSM
 - btop
 - 当前壁纸
@@ -33,6 +33,17 @@ bash ./install.sh
 ```
 
 如果仓库已经在本地，只需要执行后两条命令。
+
+Rime 方案初始化：
+
+这套 dotfiles 只负责把输入法前端切到 `IBus + Rime`，`oh-my-rime` 用户方案本身不纳管在仓库里。
+如果要把当前这套“小鹤双拼 + oh-my-rime”一起装回去，执行：
+
+```bash
+bash ./scripts/install-oh-my-rime.sh
+```
+
+这个脚本会把 `Mintimate/oh-my-rime` 同步到 `~/.config/ibus/rime`，并把默认方案固定成 `double_pinyin_flypy`。
 
 安装脚本会做这些事：
 - 从 `packages/pacman.txt` 安装官方仓库依赖
@@ -81,7 +92,6 @@ bash ./install.sh --uninstall
 - `~/.config/fish`
 - `~/.config/fastfetch`
 - `~/.config/menus`
-- `~/.config/fcitx5`
 - `~/.config/uwsm`
 - `~/.config/btop`
 - `~/.config/starship.toml`
@@ -89,7 +99,7 @@ bash ./install.sh --uninstall
 
 有意不纳管的内容：
 - `fish_variables`
-- `fcitx5/conf/cached_layouts`
+- `~/.config/ibus/rime`
 - 应用数据、缓存、通知历史、launcher 数据库，以及其他会频繁变化的运行时状态
 - 当前未使用的配置，比如 Waybar
 
@@ -109,7 +119,8 @@ bash ./install.sh --uninstall
 - Quickshell
 - Caelestia
 - UWSM
-- Fcitx5
+- IBus
+- Rime
 - Kitty
 - Foot
 - Fish

@@ -156,6 +156,7 @@ Item {
 
                     TrayMenu {
                         popouts: root.wrapper
+                        trayItemId: trayMenu.modelData.id
                         trayItem: trayMenu.modelData.menu
                     }
                 }

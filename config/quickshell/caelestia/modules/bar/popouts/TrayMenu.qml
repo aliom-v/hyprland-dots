@@ -12,6 +12,7 @@ StackView {
     id: root
 
     required property Item popouts
+    required property string trayItemId
     required property QsMenuHandle trayItem
 
     implicitWidth: currentItem.implicitWidth
@@ -30,6 +31,26 @@ StackView {
         NumberAnimation {
             duration: 0
         }
+    }
+
+    function shouldHideEntry(entry: QsMenuEntry, index: int): bool {
+        return false;
+    }
+
+    function getMenuIcon(icon: string): string {
+        if (icon === "")
+            return "";
+        if (icon.includes("?path=")) {
+            const [name, path] = icon.split("?path=");
+            return Qt.resolvedUrl(`${path}/${name.slice(name.lastIndexOf("/") + 1)}`);
+        }
+        if (icon.includes("://") || icon.startsWith("/"))
+            return icon;
+        return Quickshell.iconPath(icon, "image-missing");
+    }
+
+    function getMenuText(text: string): string {
+        return text;
     }
 
     component SubMenu: Column {
@@ -71,12 +92,14 @@ StackView {
                 id: item
 
                 required property QsMenuEntry modelData
+                readonly property bool hiddenByFilter: root.shouldHideEntry(item.modelData, index)
 
                 implicitWidth: Config.bar.sizes.trayMenuWidth
-                implicitHeight: modelData.isSeparator ? 1 : children.implicitHeight
+                implicitHeight: hiddenByFilter ? 0 : modelData.isSeparator ? 1 : children.implicitHeight
 
                 radius: Appearance.rounding.full
-                color: modelData.isSeparator ? Colours.palette.m3outlineVariant : "transparent"
+                color: hiddenByFilter ? "transparent" : modelData.isSeparator ? Colours.palette.m3outlineVariant : "transparent"
+                visible: !hiddenByFilter
 
                 Loader {
                     id: children
@@ -84,7 +107,7 @@ StackView {
                     anchors.left: parent.left
                     anchors.right: parent.right
 
-                    active: !item.modelData.isSeparator
+                    active: !item.hiddenByFilter && !item.modelData.isSeparator
 
                     sourceComponent: Item {
                         implicitHeight: label.implicitHeight
@@ -121,7 +144,7 @@ StackView {
                             sourceComponent: IconImage {
                                 implicitSize: label.implicitHeight
 
-                                source: item.modelData.icon
+                                source: root.getMenuIcon(item.modelData.icon)
                             }
                         }
 
@@ -138,7 +161,7 @@ StackView {
                         TextMetrics {
                             id: labelMetrics
 
-                            text: item.modelData.text
+                            text: root.getMenuText(item.modelData.text)
                             font.pointSize: label.font.pointSize
                             font.family: label.font.family
 

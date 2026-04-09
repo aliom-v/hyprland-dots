@@ -19,7 +19,6 @@ config_dirs=(
   fish
   fastfetch
   menus
-  fcitx5
   uwsm
   btop
 )
@@ -608,5 +607,8 @@ fi
 if (( dry_run )); then
   printf 'dry run complete\n'
 else
+  if [[ ! -f "$HOME/.config/ibus/rime/default.custom.yaml" ]]; then
+    printf 'note   run bash ./scripts/install-oh-my-rime.sh to bootstrap oh-my-rime into ~/.config/ibus/rime\n'
+  fi
   printf 'install complete\n'
 fi
